@@ -13,6 +13,7 @@ const (
 	NodeTypeBad NodeType = iota
 	NodeTypeArrayType
 	NodeTypeAssignStmt
+	NodeTypeBasicLit
 	NodeTypeBinaryExpr
 	NodeTypeBlockStmt
 	NodeTypeBranchStmt
