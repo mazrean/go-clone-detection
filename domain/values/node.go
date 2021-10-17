@@ -3,7 +3,6 @@ package values
 type (
 	NodeType byte
 	Position struct {
-		file  string
 		start int64
 		end   int64
 	}
@@ -66,16 +65,11 @@ const (
 	NodeTypeValueSpec
 )
 
-func NewPosition(file string, start, end int64) *Position {
+func NewPosition(start, end int64) *Position {
 	return &Position{
-		file:  file,
 		start: start,
 		end:   end,
 	}
-}
-
-func (p *Position) GetFile() string {
-	return p.file
 }
 
 func (p *Position) GetStart() int64 {
