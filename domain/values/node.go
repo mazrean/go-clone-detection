@@ -1,8 +1,9 @@
 package values
 
 type (
-	NodeType byte
-	Position struct {
+	NodeType  byte
+	NodeToken byte
+	Position  struct {
 		start int64
 		end   int64
 	}
@@ -13,6 +14,7 @@ const (
 	NodeTypeBad NodeType = iota
 	NodeTypeArrayType
 	NodeTypeAssignStmt
+	NodeTypeBasicLit
 	NodeTypeBinaryExpr
 	NodeTypeBlockStmt
 	NodeTypeBranchStmt
@@ -63,6 +65,68 @@ const (
 	NodeTypeTypeSwitchStmt
 	NodeTypeUnaryExpr
 	NodeTypeValueSpec
+)
+
+const (
+	NodeTokenNone NodeToken = iota
+	NodeTokenIllegal
+
+	NodeTokenInt
+	NodeTokenFloat
+	NodeTokenImaginary
+	NodeTokenChar
+	NodeTokenString
+
+	NodeTokenAdd
+	NodeTokenSub
+	NodeTokenMultiple
+	NodeTokenQuotient
+	NodeTokenRemainder
+
+	NodeTokenLogicalAnd
+	NodeTokenLogicalOr
+	NodeTokenEqual
+	NodeTokenNotEqual
+	NodeTokenLess
+	NodeTokenGreater
+	NodeTokenLessOrEqual
+	NodeTokenGreaterOrEqual
+	NodeTokenAnd
+	NodeTokenOr
+	NodeTokenXor
+	NodeTokenShiftLeft
+	NodeTokenShiftRight
+	NodeTokenAndNot
+
+	NodeTokenAssign
+	NodeTokenAddAssign
+	NodeTokenSubAssign
+	NodeTokenMultipleAssign
+	NodeTokenQuotientAssign
+	NodeTokenRemainderAssign
+	NodeTokenAndAssign
+	NodeTokenOrAssign
+	NodeTokenXorAssign
+	NodeTokenShiftLeftAssign
+	NodeTokenShiftRightAssign
+	NodeTokenAndNotAssign
+
+	NodeTokenIncrement
+	NodeTokenDecrement
+
+	NodeTokenNot
+	NodeTokenArrow
+
+	NodeTokenBreak
+	NodeTokenContinue
+	NodeTokenFallthrough
+	NodeTokenGoto
+
+	NodeTokenConst
+
+	NodeTokenImport
+	NodeTokenType
+	NodeTokenVar
 )
 
 func NewPosition(start, end int64) *Position {

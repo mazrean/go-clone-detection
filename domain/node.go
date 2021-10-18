@@ -12,8 +12,7 @@ type Node struct {
 	nodeType   values.NodeType
 	position   *values.Position
 	childCount values.ChildCount
-	// 一部のノードでのみ必要な追加の情報
-	optionMap map[string]interface{}
+	token      values.NodeToken
 }
 
 func NewNode(
@@ -21,14 +20,14 @@ func NewNode(
 	nodeType values.NodeType,
 	position *values.Position,
 	childCount values.ChildCount,
-	optionMap map[string]interface{},
+	token values.NodeToken,
 ) *Node {
 	return &Node{
 		node:       node,
 		nodeType:   nodeType,
 		position:   position,
 		childCount: childCount,
-		optionMap:  optionMap,
+		token:      token,
 	}
 }
 
@@ -52,6 +51,6 @@ func (n *Node) IncrementChildCount(childCount values.ChildCount) {
 	n.childCount += childCount
 }
 
-func (n *Node) GetOptionMap() map[string]interface{} {
-	return n.optionMap
+func (n *Node) GetToken() values.NodeToken {
+	return n.token
 }
