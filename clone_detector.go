@@ -6,6 +6,8 @@ import (
 	"go/ast"
 
 	"github.com/mazrean/go-clone-detection/domain"
+	"github.com/mazrean/go-clone-detection/serializer"
+	"github.com/mazrean/go-clone-detection/stree"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -18,6 +20,14 @@ type CloneDetector struct {
 func NewCloneDetector(config *Config) *CloneDetector {
 	if config == nil {
 		config = DefaultConfig
+	} else {
+		if config.Serializer == nil {
+			config.Serializer = &serializer.Serializer{}
+		}
+
+		if config.SuffixTree == nil {
+			config.SuffixTree = stree.NewSTree()
+		}
 	}
 
 	return &CloneDetector{
