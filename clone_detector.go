@@ -67,9 +67,28 @@ func (cd *CloneDetector) AddNode(ctx context.Context, root ast.Node) error {
 }
 
 func (cd *CloneDetector) GetClones() ([]*domain.ClonePair, error) {
-	clonePairs, err := cd.suffixTree.GetClonePairs(cd.config.Threshold)
+	cloneSequencePairs, err := cd.suffixTree.GetClonePairs(cd.config.Threshold)
 	if err != nil {
 		return nil, fmt.Errorf("suffix tree error: %v", err)
+	}
+
+	clonePairs := []*domain.ClonePair{}
+	for _, cloneSequencePair := range cloneSequencePairs {
+		sequence1, sequence2 := cloneSequencePair.GetNodes()
+		var i int64
+		for i = 0; i < int64(cloneSequencePair.GetLength()); {
+			node1 := sequence1[i]
+
+			if int64(node1.GetChildCount()) <= int64(len(sequence1)) {
+				clonePairs = append(clonePairs, domain.NewClonePair(
+					node1,
+					sequence2[i],
+				))
+				i += int64(node1.GetChildCount())
+			} else {
+				break
+			}
+		}
 	}
 
 	return clonePairs, nil

@@ -6,5 +6,5 @@ import (
 
 type SuffixTree interface {
 	AddNode(node *domain.Node) error
-	GetClonePairs(threshold int) ([]*domain.ClonePair, error)
+	GetClonePairs(threshold int) ([]*domain.CloneSequencePair, error)
 }
