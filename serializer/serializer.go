@@ -63,6 +63,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.nodeChan <- v.node
 
 		return &visitor{
+			ctx:          v.ctx,
 			nodeChan: v.nodeChan,
 			childCounter: func(n values.ChildCount) {
 				v.node.IncrementChildCount(n)
