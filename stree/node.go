@@ -55,6 +55,10 @@ func (n *node) getNodeType() nodeType {
 	return n.nodeType
 }
 
+func (n *node) getEdges() []*edge {
+	return n.edges
+}
+
 var (
 	ErrNoEdgeFound = errors.New("no edge found")
 )
