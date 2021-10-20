@@ -21,7 +21,7 @@ func (s *Serializer) Serialize(ctx context.Context, root ast.Node, nodeChan chan
 	visitor := &visitor{
 		ctx:          ctx,
 		nodeChan:     nodeChan,
-		childCounter: func(n values.ChildCount) {},
+		stack:        []*stackValue{},
 	}
 
 	ast.Walk(visitor, root)
@@ -29,16 +29,26 @@ func (s *Serializer) Serialize(ctx context.Context, root ast.Node, nodeChan chan
 	return nil
 }
 
+type stackValue struct {
+	node *domain.Node
+	childCounter func(values.ChildCount)
+}
+
 type visitor struct {
 	ctx          context.Context
 	nodeChan     chan<- *domain.Node
-	node         *domain.Node
-	childCounter func(values.ChildCount)
+	stack 			[]*stackValue
 }
 
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	if node == nil {
-		v.childCounter(v.node.GetChildCount() + 1)
+		sValue := v.stack[len(v.stack)-1]
+		v.stack = v.stack[:len(v.stack)-1]
+
+		if sValue.childCounter != nil {
+			sValue.childCounter(sValue.node.GetChildCount() + 1)
+		}
+
 		return nil
 	}
 
@@ -52,23 +62,29 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			return nil
 		}
 
-		v.node = domain.NewNode(
-			node,
-			nodeType,
-			values.NewPosition(int64(node.Pos()), int64(node.End())),
-			0,
-			getNodeToken(node),
-		)
-
-		v.nodeChan <- v.node
-
-		return &visitor{
-			ctx:          v.ctx,
-			nodeChan: v.nodeChan,
-			childCounter: func(n values.ChildCount) {
-				v.node.IncrementChildCount(n)
-			},
+		var childCounter func(count values.ChildCount)
+		if len(v.stack) == 0 {
+			childCounter = nil
+		} else {
+			childCounter = v.stack[len(v.stack)-1].node.IncrementChildCount
 		}
+
+		sValue := stackValue{
+			node: domain.NewNode(
+				node,
+				nodeType,
+				values.NewPosition(int64(node.Pos()), int64(node.End())),
+				0,
+				getNodeToken(node),
+			),
+			childCounter: childCounter,
+		}
+
+		v.nodeChan <- sValue.node
+
+		v.stack = append(v.stack, &sValue)
+
+		return v
 	}
 }
 
