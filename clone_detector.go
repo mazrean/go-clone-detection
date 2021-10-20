@@ -20,14 +20,14 @@ type CloneDetector struct {
 func NewCloneDetector(config *Config) *CloneDetector {
 	if config == nil {
 		config = DefaultConfig
-	} else {
-		if config.Serializer == nil {
-			config.Serializer = &serializer.Serializer{}
-		}
+	}
 
-		if config.SuffixTree == nil {
-			config.SuffixTree = stree.NewSTree()
-		}
+	if config.Serializer == nil {
+		config.Serializer = &serializer.Serializer{}
+	}
+
+	if config.SuffixTree == nil {
+		config.SuffixTree = stree.NewSTree()
 	}
 
 	return &CloneDetector{
