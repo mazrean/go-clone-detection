@@ -2,6 +2,7 @@ package clone
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"go/ast"
 
@@ -40,7 +41,11 @@ func NewCloneDetector(config *Config) *CloneDetector {
 func (cd *CloneDetector) AddNode(ctx context.Context, root ast.Node) error {
 	nodeChan := make(chan *domain.Node)
 
-	eg := errgroup.Group{}
+	if root == nil {
+		return errors.New("root node is nil")
+	}
+
+	eg, ctx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
 		defer close(nodeChan)
 
