@@ -32,6 +32,8 @@ func NewCloneDetector(config *Config) *CloneDetector {
 
 	return &CloneDetector{
 		config: config,
+		serializer: config.Serializer,
+		suffixTree: config.SuffixTree,
 	}
 }
 
