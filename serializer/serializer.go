@@ -19,9 +19,9 @@ func (s *Serializer) Serialize(ctx context.Context, root ast.Node, nodeChan chan
 	s.nodes = []*domain.Node{}
 
 	visitor := &visitor{
-		ctx:          ctx,
-		nodeChan:     nodeChan,
-		stack:        []*stackValue{},
+		ctx:      ctx,
+		nodeChan: nodeChan,
+		stack:    []*stackValue{},
 	}
 
 	ast.Walk(visitor, root)
@@ -30,14 +30,14 @@ func (s *Serializer) Serialize(ctx context.Context, root ast.Node, nodeChan chan
 }
 
 type stackValue struct {
-	node *domain.Node
+	node         *domain.Node
 	childCounter func(values.ChildCount)
 }
 
 type visitor struct {
-	ctx          context.Context
-	nodeChan     chan<- *domain.Node
-	stack 			[]*stackValue
+	ctx      context.Context
+	nodeChan chan<- *domain.Node
+	stack    []*stackValue
 }
 
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
@@ -80,7 +80,11 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			childCounter: childCounter,
 		}
 
-		v.nodeChan <- sValue.node
+		select {
+		case <-v.ctx.Done():
+			return nil
+		case v.nodeChan <- sValue.node:
+		}
 
 		v.stack = append(v.stack, &sValue)
 
@@ -339,6 +343,8 @@ func getNodeToken(node ast.Node) values.NodeToken {
 			return values.NodeTokenNot
 		case token.ARROW:
 			return values.NodeTokenArrow
+		case token.SUB:
+			return values.NodeTokenSub
 		}
 
 		log.Printf("unknown unary token: %v", node.Op)

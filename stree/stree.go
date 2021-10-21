@@ -35,8 +35,13 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 	st.domainNodes = append(st.domainNodes, newDomainNode)
 
 	if len(st.domainNodes) == 1 {
+		l, err := newLabel(0, finalIndex)
+		if err != nil {
+			return fmt.Errorf("error creating label(first): %v", err)
+		}
+
 		leaf := newLeafNode(st, 0)
-		e := newEdge(st, &label{0, finalIndex}, leaf)
+		e := newEdge(st, l, leaf)
 		st.latestNode.addEdge(e)
 
 		st.leafNum++
@@ -55,19 +60,24 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 			nowNodeLen = st.latestNodeLen - 1
 		}
 
-		domainNodes := st.domainNodes[nowNodeLen:]
+		restDomainNodes := st.domainNodes[st.leafNum+nowNodeLen-1:]
 
-		nowNodeLen += int64(len(domainNodes))
-		nowNode, e, domainNodes, err := st.walk(nowNode, domainNodes)
+		nowNodeLen += int64(len(restDomainNodes))
+		nowNode, e, restDomainNodes, err := st.walk(nowNode, restDomainNodes)
 		if err != nil {
-			return fmt.Errorf("error walking: %v", err)
+			return fmt.Errorf("error walking(node): %v", err)
 		}
-		nowNodeLen -= int64(len(domainNodes))
+		nowNodeLen -= int64(len(restDomainNodes))
 
 		// エッジがみつからなかった場合、Rule2適用
 		if e == nil {
+			l, err := newLabel(nowNodeLen, finalIndex)
+			if err != nil {
+				return fmt.Errorf("error creating label(no edge): %v", err)
+			}
+
 			leaf := newLeafNode(st, st.leafNum)
-			e := newEdge(st, &label{nowNodeLen, finalIndex}, leaf)
+			e := newEdge(st, l, leaf)
 			nowNode.addEdge(e)
 
 			st.leafNum++
@@ -77,27 +87,41 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 			continue
 		}
 
-		domainNode := st.domainNodes[e.getLabel().start+int64(len(domainNodes))]
+		domainNode := st.domainNodes[e.getLabel().start+int64(len(restDomainNodes))-1]
 
 		if domainNode.GetNodeType() != newDomainNode.GetNodeType() || domainNode.GetToken() != newDomainNode.GetToken() {
 			// エッジがみつかり、次の文字が適合しない場合も、Rule2適用
 
-			splitPoint := e.getLabel().start + int64(len(domainNodes))
-			suffixLink := nowNode.getSuffixLink()
-			var emptyEdge *edge
-			suffixLink, emptyEdge, _, err = st.walk(suffixLink, st.domainNodes[e.getLabel().start:splitPoint])
-			if err != nil {
-				return fmt.Errorf("error walking: %v", err)
-			}
-			if emptyEdge != nil {
-				return errors.New("error walking: no edge")
+			splitPoint := e.getLabel().start + int64(len(restDomainNodes))
+			var suffixLink *node
+			if nowNode.getNodeType() != rootNodeType {
+				suffixLink = nowNode.getSuffixLink()
+				var emptyEdge *edge
+				suffixLink, emptyEdge, _, err = st.walk(suffixLink, st.domainNodes[e.getLabel().start:splitPoint])
+				if err != nil {
+					return fmt.Errorf("error walking(suffix tree): %v", err)
+				}
+				if emptyEdge != nil {
+					return errors.New("error walking: no edge")
+				}
+			} else {
+				suffixLink = st.root
 			}
 
-			nowNode, _ := e.splitEdge(splitPoint, suffixLink)
-			nowNodeLen = nowNodeLen + int64(len(domainNodes)) - 1
+			nowNode, _, err := e.splitEdge(splitPoint, suffixLink)
+			if err != nil {
+				return fmt.Errorf("error splitting edge: %v", err)
+			}
+
+			nowNodeLen = nowNodeLen + int64(len(restDomainNodes)) - 1
+
+			l, err := newLabel(nowNodeLen, finalIndex)
+			if err != nil {
+				return fmt.Errorf("error creating label(char): %v", err)
+			}
 
 			leaf := newLeafNode(st, st.leafNum)
-			e := newEdge(st, &label{nowNodeLen, finalIndex}, leaf)
+			e := newEdge(st, l, leaf)
 			nowNode.addEdge(e)
 
 			st.leafNum++

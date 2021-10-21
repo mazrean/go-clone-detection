@@ -64,8 +64,8 @@ var (
 )
 
 func (n *node) getEdgeByLabel(domainNode *domain.Node) (*edge, error) {
-	if n.nodeType != internalNodeType {
-		return nil, errors.New("node is not an internal node")
+	if n.nodeType == leafNodeType {
+		return nil, errors.New("node is a leaf node")
 	}
 
 	id := sort.Search(len(n.edges), func(i int) bool {
@@ -76,7 +76,7 @@ func (n *node) getEdgeByLabel(domainNode *domain.Node) (*edge, error) {
 		return n.tree.domainNodes[n.edges[i].label.start].GetNodeType() >= domainNode.GetNodeType()
 	})
 
-	if n.tree.domainNodes[n.edges[id].label.start].GetNodeType() != domainNode.GetNodeType() || n.tree.domainNodes[n.edges[id].label.start].GetToken() != domainNode.GetToken() {
+	if id == len(n.edges) || n.tree.domainNodes[n.edges[id].label.start].GetNodeType() != domainNode.GetNodeType() || n.tree.domainNodes[n.edges[id].label.start].GetToken() != domainNode.GetToken() {
 		return nil, ErrNoEdgeFound
 	}
 
