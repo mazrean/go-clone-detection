@@ -45,14 +45,6 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 			nowNodeLen = st.latestNodeLen - 1
 		}
 		oldNextNode := st.nextNode
-		log.Printf(
-			"leafNum: %d, domain node num: %d, nowNodeLen: %d, node type: %d, node token: %d",
-			st.leafNum,
-			len(st.domainNodes),
-			nowNodeLen,
-			newDomainNode.GetNodeType(),
-			newDomainNode.GetToken(),
-		)
 
 		restDomainNodes := st.domainNodes[st.leafNum+nowNodeLen:]
 
@@ -99,7 +91,6 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 			var suffixLink *node
 			var linkDomainNodes []*domain.Node
 			if nowNode.getNodeType() != rootNodeType {
-				log.Println("non root node")
 				suffixLink = nowNode.getSuffixLink()
 				suffixLink, _, linkDomainNodes, err = st.walk(suffixLink, st.domainNodes[e.getLabel().start:splitPoint])
 				if err != nil {
@@ -107,10 +98,8 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 				}
 			} else {
 				if e.getLabel().start+1 == splitPoint {
-					log.Println("root node")
 					suffixLink = st.root
 				} else {
-					log.Println("root node(not first)")
 					suffixLink, _, linkDomainNodes, err = st.walk(st.root, st.domainNodes[e.getLabel().start+1:splitPoint])
 					if err != nil {
 						return fmt.Errorf("error walking(suffix tree): %v", err)
@@ -123,7 +112,6 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 					次のノード追加までにsuffix linkのノードは作られるので,
 					メモリの確保のみしておく
 				*/
-				log.Printf("linkDomainNodes: %v\n", linkDomainNodes)
 				st.nextNode = &node{}
 				suffixLink = st.nextNode
 			} else {
@@ -138,7 +126,6 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 
 			if oldNextNode != nil {
 				*oldNextNode = *newNode
-				log.Printf("oldNextNode: %+v\n", oldNextNode)
 				newNode = oldNextNode
 				e.node = newNode
 			}
@@ -155,7 +142,7 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 
 			leaf := newLeafNode(st, st.leafNum)
 			e := newEdge(st, l, leaf)
-			err = nowNode.addEdge(e)
+			err = newNode.addEdge(e)
 			if err != nil {
 				return fmt.Errorf("error adding edge(char): %v", err)
 			}
