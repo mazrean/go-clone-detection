@@ -3,7 +3,7 @@ package clone
 var (
 	DefaultConfig = &Config{
 		BufSize:   100,
-		Threshold: 100,
+		Threshold: 10,
 	}
 )
 

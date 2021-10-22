@@ -83,7 +83,11 @@ func (n *node) getEdgeByLabel(domainNode *domain.Node) (*edge, error) {
 	return n.edges[id], nil
 }
 
-func (n *node) addEdge(e *edge) {
+func (n *node) addEdge(e *edge) error {
+	if n.nodeType == leafNodeType {
+		return errors.New("node is a leaf node")
+	}
+
 	n.edges = append(n.edges, e)
 
 	sort.Slice(n.edges, func(i, j int) bool {
@@ -93,6 +97,8 @@ func (n *node) addEdge(e *edge) {
 
 		return n.tree.domainNodes[n.edges[i].label.start].GetNodeType() < n.tree.domainNodes[n.edges[j].label.start].GetNodeType()
 	})
+
+	return nil
 }
 
 func (n *node) getSuffixLink() *node {

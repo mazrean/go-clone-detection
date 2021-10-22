@@ -36,7 +36,12 @@ func (e *edge) splitEdge(i int64, newSuffixLink *node) (*node, *edge, error) {
 }
 
 func (e *edge) getLength() int64 {
-	return e.label.end - e.label.start
+	end := e.label.end
+	if end == finalIndex {
+		end = int64(len(e.tree.domainNodes))
+	}
+
+	return end - e.label.start
 }
 
 func (e *edge) getNode() *node {

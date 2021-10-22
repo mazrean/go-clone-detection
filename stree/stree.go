@@ -3,6 +3,7 @@ package stree
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 
 	"github.com/mazrean/go-clone-detection/domain"
@@ -14,6 +15,7 @@ type STree struct {
 	leafNum       int64
 	latestNode    *node
 	latestNodeLen int64
+	nextNode      *node
 }
 
 func NewSTree() *STree {
@@ -34,33 +36,25 @@ func NewSTree() *STree {
 func (st *STree) AddNode(newDomainNode *domain.Node) error {
 	st.domainNodes = append(st.domainNodes, newDomainNode)
 
-	if len(st.domainNodes) == 1 {
-		l, err := newLabel(0, finalIndex)
-		if err != nil {
-			return fmt.Errorf("error creating label(first): %v", err)
-		}
-
-		leaf := newLeafNode(st, 0)
-		e := newEdge(st, l, leaf)
-		st.latestNode.addEdge(e)
-
-		st.leafNum++
-		st.latestNode = st.root
-		st.latestNodeLen = 0
-
-		return nil
-	}
-
 	for st.leafNum < int64(len(st.domainNodes)) {
 		nowNode := st.latestNode
 		// 現在位置のノードのrootからのトークン数
 		nowNodeLen := st.latestNodeLen
-		if st.latestNode.getNodeType() != rootNodeType {
+		if nowNode.getNodeType() != rootNodeType {
 			nowNode = nowNode.getSuffixLink()
 			nowNodeLen = st.latestNodeLen - 1
 		}
+		oldNextNode := st.nextNode
+		log.Printf(
+			"leafNum: %d, domain node num: %d, nowNodeLen: %d, node type: %d, node token: %d",
+			st.leafNum,
+			len(st.domainNodes),
+			nowNodeLen,
+			newDomainNode.GetNodeType(),
+			newDomainNode.GetToken(),
+		)
 
-		restDomainNodes := st.domainNodes[st.leafNum+nowNodeLen-1:]
+		restDomainNodes := st.domainNodes[st.leafNum+nowNodeLen:]
 
 		nowNodeLen += int64(len(restDomainNodes))
 		nowNode, e, restDomainNodes, err := st.walk(nowNode, restDomainNodes)
@@ -70,21 +64,30 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 		nowNodeLen -= int64(len(restDomainNodes))
 
 		// エッジがみつからなかった場合、Rule2適用
-		if e == nil {
-			l, err := newLabel(nowNodeLen, finalIndex)
+		if e == nil && len(restDomainNodes) > 0 {
+			l, err := newLabel(st.leafNum+nowNodeLen, finalIndex)
 			if err != nil {
 				return fmt.Errorf("error creating label(no edge): %v", err)
 			}
 
 			leaf := newLeafNode(st, st.leafNum)
 			e := newEdge(st, l, leaf)
-			nowNode.addEdge(e)
+			err = nowNode.addEdge(e)
+			if err != nil {
+				return fmt.Errorf("error adding edge(no edge): %v", err)
+			}
 
 			st.leafNum++
 			st.latestNode = nowNode
 			st.latestNodeLen = nowNodeLen
+			st.nextNode = nil
 
 			continue
+		}
+
+		if e == nil {
+			// ちょうどノード上まで行った時、Rule3適用
+			break
 		}
 
 		domainNode := st.domainNodes[e.getLabel().start+int64(len(restDomainNodes))-1]
@@ -92,37 +95,70 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 		if domainNode.GetNodeType() != newDomainNode.GetNodeType() || domainNode.GetToken() != newDomainNode.GetToken() {
 			// エッジがみつかり、次の文字が適合しない場合も、Rule2適用
 
-			splitPoint := e.getLabel().start + int64(len(restDomainNodes))
+			splitPoint := e.getLabel().start + int64(len(restDomainNodes)) - 1
 			var suffixLink *node
+			var linkDomainNodes []*domain.Node
 			if nowNode.getNodeType() != rootNodeType {
+				log.Println("non root node")
 				suffixLink = nowNode.getSuffixLink()
-				var emptyEdge *edge
-				suffixLink, emptyEdge, _, err = st.walk(suffixLink, st.domainNodes[e.getLabel().start:splitPoint])
+				suffixLink, _, linkDomainNodes, err = st.walk(suffixLink, st.domainNodes[e.getLabel().start:splitPoint])
 				if err != nil {
 					return fmt.Errorf("error walking(suffix tree): %v", err)
 				}
-				if emptyEdge != nil {
-					return errors.New("error walking: no edge")
-				}
 			} else {
-				suffixLink = st.root
+				if e.getLabel().start+1 == splitPoint {
+					log.Println("root node")
+					suffixLink = st.root
+				} else {
+					log.Println("root node(not first)")
+					suffixLink, _, linkDomainNodes, err = st.walk(st.root, st.domainNodes[e.getLabel().start+1:splitPoint])
+					if err != nil {
+						return fmt.Errorf("error walking(suffix tree): %v", err)
+					}
+				}
 			}
 
-			nowNode, _, err := e.splitEdge(splitPoint, suffixLink)
+			if len(linkDomainNodes) > 0 {
+				/*
+					次のノード追加までにsuffix linkのノードは作られるので,
+					メモリの確保のみしておく
+				*/
+				log.Printf("linkDomainNodes: %v\n", linkDomainNodes)
+				st.nextNode = &node{}
+				suffixLink = st.nextNode
+			} else {
+				st.nextNode = nil
+			}
+
+			newNode, _, err := e.splitEdge(splitPoint, suffixLink)
 			if err != nil {
 				return fmt.Errorf("error splitting edge: %v", err)
 			}
+			newNodeLen := nowNodeLen + e.getLength()
 
-			nowNodeLen = nowNodeLen + int64(len(restDomainNodes)) - 1
+			if oldNextNode != nil {
+				*oldNextNode = *newNode
+				log.Printf("oldNextNode: %+v\n", oldNextNode)
+				newNode = oldNextNode
+				e.node = newNode
+			}
 
-			l, err := newLabel(nowNodeLen, finalIndex)
+			if len(linkDomainNodes) == 0 {
+				nowNode = newNode
+				nowNodeLen = newNodeLen
+			}
+
+			l, err := newLabel(st.leafNum+nowNodeLen, finalIndex)
 			if err != nil {
 				return fmt.Errorf("error creating label(char): %v", err)
 			}
 
 			leaf := newLeafNode(st, st.leafNum)
 			e := newEdge(st, l, leaf)
-			nowNode.addEdge(e)
+			err = nowNode.addEdge(e)
+			if err != nil {
+				return fmt.Errorf("error adding edge(char): %v", err)
+			}
 
 			st.leafNum++
 			st.latestNode = nowNode
@@ -147,7 +183,7 @@ func (st *STree) walk(nd *node, domainNodes []*domain.Node) (*node, *edge, []*do
 		return nil, nil, nil, fmt.Errorf("error getting edge by label: %v", err)
 	}
 
-	for e != nil && e.getLength() < int64(len(domainNodes)) {
+	for e.getLength() < int64(len(domainNodes)) {
 		nd = e.getNode()
 		domainNodes = domainNodes[e.getLength():]
 
@@ -158,6 +194,10 @@ func (st *STree) walk(nd *node, domainNodes []*domain.Node) (*node, *edge, []*do
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("error getting edge by label: %v", err)
 		}
+	}
+
+	if e.getLength() == int64(len(domainNodes)) {
+		return e.getNode(), nil, domainNodes[e.getLength():], nil
 	}
 
 	return nd, e, domainNodes, nil
@@ -172,7 +212,8 @@ func (st *STree) GetClonePairs(threshold int) ([]*domain.CloneSequencePair, erro
 			- 被った場合上書き
 		- startが同じで長さがより長いCloneはsuffix treeの中で長い方のみ残るので、発生しない
 	*/
-	var rootEdges []*edge
+
+	rootEdges := make([]*edge, len(st.root.getEdges()))
 	copy(rootEdges, st.root.getEdges())
 	sort.Slice(rootEdges, func(i, j int) bool {
 		return rootEdges[i].getLabel().start > rootEdges[j].getLabel().start
@@ -264,6 +305,7 @@ func (st *STree) dfs(nd *node, threshold int, length int, cloneMap map[int]map[i
 	for _, leafList := range leafsList {
 		leafs = append(leafs, leafList...)
 	}
+	log.Printf("length: %d, leafs: %+v, cloneMap: %+v\n", length, leafs, cloneMap)
 
 	return leafs, cloneMap, nil
 }
