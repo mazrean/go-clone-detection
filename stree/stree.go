@@ -3,7 +3,6 @@ package stree
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 
 	"github.com/mazrean/go-clone-detection/domain"
@@ -45,12 +44,6 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 			nowNodeLen = st.latestNodeLen - 1
 		}
 		oldNextNode := st.nextNode
-		log.Printf(
-			"nowNodeLen: %d, leaf num: %d, domain node len: %d\n",
-			nowNodeLen,
-			st.leafNum,
-			len(st.domainNodes),
-		)
 
 		restDomainNodes := st.domainNodes[st.leafNum+nowNodeLen:]
 
@@ -124,7 +117,6 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 				*/
 				st.nextNode = &node{}
 				suffixLink = st.nextNode
-				log.Printf("empty suffix link\n")
 			} else {
 				st.nextNode = nil
 			}
@@ -139,7 +131,6 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 				*oldNextNode = *newNode
 				newNode = oldNextNode
 				e.node = newNode
-				log.Printf("set suffix link\n")
 			}
 
 			if len(linkDomainNodes) == 0 {
@@ -254,7 +245,6 @@ func (st *STree) dfs(nd *node, threshold int, length int, cloneMap map[int]map[i
 	if nd.getNodeType() != internalNodeType {
 		return nil, nil, errors.New("error dfs: not internal node")
 	}
-	log.Printf("dfs start(length: %d)\n", length)
 
 	//直下にあるleafの値
 	directLeafs := []int{}
@@ -317,8 +307,6 @@ func (st *STree) dfs(nd *node, threshold int, length int, cloneMap map[int]map[i
 	for _, leafList := range leafsList {
 		leafs = append(leafs, leafList...)
 	}
-
-	log.Printf("dfs end(length: %d)\n", length)
 
 	return leafs, cloneMap, nil
 }

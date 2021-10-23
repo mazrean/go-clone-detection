@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
-	"log"
 
 	"github.com/mazrean/go-clone-detection/domain"
 	"github.com/mazrean/go-clone-detection/serializer"
@@ -96,8 +95,7 @@ func (cd *CloneDetector) GetClones() ([]*ClonePair, error) {
 	}
 
 	clonePairs := []*ClonePair{}
-	for j, cloneSequencePair := range cloneSequencePairs {
-		log.Printf("Clone pair %d\n", j)
+	for _, cloneSequencePair := range cloneSequencePairs {
 		sequence1, sequence2 := cloneSequencePair.GetNodes()
 		var i int64
 		for i = 0; i < int64(cloneSequencePair.GetLength()); {
