@@ -110,7 +110,7 @@ func (cd *CloneDetector) GetClones() ([]*ClonePair, error) {
 				}
 				i += int64(node1.GetChildCount()) + 1
 			} else {
-				break
+				i++
 			}
 		}
 	}
