@@ -45,6 +45,12 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 			nowNodeLen = st.latestNodeLen - 1
 		}
 		oldNextNode := st.nextNode
+		log.Printf(
+			"nowNodeLen: %d, leaf num: %d, domain node len: %d\n",
+			nowNodeLen,
+			st.leafNum,
+			len(st.domainNodes),
+		)
 
 		restDomainNodes := st.domainNodes[st.leafNum+nowNodeLen:]
 
@@ -57,7 +63,11 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 
 		// エッジがみつからなかった場合、Rule2適用
 		if e == nil && len(restDomainNodes) > 0 {
-			l, err := newLabel(st.leafNum+nowNodeLen, finalIndex)
+			if st.nextNode != nil {
+				panic("nextNode is not nil")
+			}
+
+			l, err := newLabel(int64(len(st.domainNodes))-1, finalIndex)
 			if err != nil {
 				return fmt.Errorf("error creating label(no edge): %v", err)
 			}
@@ -114,6 +124,7 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 				*/
 				st.nextNode = &node{}
 				suffixLink = st.nextNode
+				log.Printf("empty suffix link\n")
 			} else {
 				st.nextNode = nil
 			}
@@ -128,6 +139,7 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 				*oldNextNode = *newNode
 				newNode = oldNextNode
 				e.node = newNode
+				log.Printf("set suffix link\n")
 			}
 
 			if len(linkDomainNodes) == 0 {
@@ -135,7 +147,7 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 				nowNodeLen = newNodeLen
 			}
 
-			l, err := newLabel(st.leafNum+nowNodeLen, finalIndex)
+			l, err := newLabel(int64(len(st.domainNodes))-1, finalIndex)
 			if err != nil {
 				return fmt.Errorf("error creating label(char): %v", err)
 			}
@@ -183,7 +195,11 @@ func (st *STree) walk(nd *node, domainNodes []*domain.Node) (*node, *edge, []*do
 		}
 	}
 
-	if e.getLength() == int64(len(domainNodes)) {
+	edgeLastNode := st.domainNodes[e.getLabel().start+int64(len(domainNodes))-1]
+	restLastNode := domainNodes[len(domainNodes)-1]
+	if e.getLength() == int64(len(domainNodes)) &&
+		edgeLastNode.GetNodeType() == restLastNode.GetNodeType() &&
+		edgeLastNode.GetToken() == restLastNode.GetToken() {
 		return e.getNode(), nil, domainNodes[e.getLength():], nil
 	}
 
@@ -271,6 +287,10 @@ func (st *STree) dfs(nd *node, threshold int, length int, cloneMap map[int]map[i
 		//直下のleaf間のペア検出
 		for i, leaf1 := range directLeafs {
 			for j := i + 1; j < len(directLeafs); j++ {
+				_, ok := cloneMap[leaf1+length]
+				if !ok {
+					cloneMap[leaf1+length] = map[int]int{}
+				}
 				cloneMap[leaf1+length][directLeafs[j]+length] = length
 			}
 		}
@@ -280,6 +300,10 @@ func (st *STree) dfs(nd *node, threshold int, length int, cloneMap map[int]map[i
 			for j := i + 1; j < len(leafsList); j++ {
 				for _, leaf1 := range leafs {
 					for _, leaf2 := range leafsList[j] {
+						_, ok := cloneMap[leaf1+length]
+						if !ok {
+							cloneMap[leaf1+length] = map[int]int{}
+						}
 						cloneMap[leaf1+length][leaf2+length] = length
 					}
 				}
