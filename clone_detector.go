@@ -102,10 +102,12 @@ func (cd *CloneDetector) GetClones() ([]*ClonePair, error) {
 			node1 := sequence1[i]
 
 			if int64(node1.GetChildCount()) <= int64(len(sequence1)) {
-				clonePairs = append(clonePairs, &ClonePair{
-					node1.GetNode(),
-					sequence2[i].GetNode(),
-				})
+				if int(node1.GetChildCount()) > cd.config.Threshold {
+					clonePairs = append(clonePairs, &ClonePair{
+						node1.GetNode(),
+						sequence2[i].GetNode(),
+					})
+				}
 				i += int64(node1.GetChildCount()) + 1
 			} else {
 				break
