@@ -238,11 +238,11 @@ func (st *STree) GetClonePairs(threshold int) ([]*domain.CloneSequencePair, erro
 	}
 
 	var clonePairs []*domain.CloneSequencePair
-	for start1, cloneMap := range cloneMaps {
-		for start2, length := range cloneMap {
+	for end1, cloneMap := range cloneMaps {
+		for end2, length := range cloneMap {
 			clonePairs = append(clonePairs, domain.NewCloneSequencePair(
-				st.domainNodes[start1:start1+length],
-				st.domainNodes[start2:start2+length],
+				st.domainNodes[end1-length:end1],
+				st.domainNodes[end2-length:end2],
 			))
 		}
 	}
@@ -254,6 +254,7 @@ func (st *STree) dfs(nd *node, threshold int, length int, cloneMap map[int]map[i
 	if nd.getNodeType() != internalNodeType {
 		return nil, nil, errors.New("error dfs: not internal node")
 	}
+	log.Printf("dfs start(length: %d)\n", length)
 
 	//直下にあるleafの値
 	directLeafs := []int{}
@@ -316,7 +317,8 @@ func (st *STree) dfs(nd *node, threshold int, length int, cloneMap map[int]map[i
 	for _, leafList := range leafsList {
 		leafs = append(leafs, leafList...)
 	}
-	log.Printf("length: %d, leafs: %+v, cloneMap: %+v\n", length, leafs, cloneMap)
+
+	log.Printf("dfs end(length: %d)\n", length)
 
 	return leafs, cloneMap, nil
 }
