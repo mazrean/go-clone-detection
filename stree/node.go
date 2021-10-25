@@ -70,13 +70,20 @@ func (n *node) getEdgeByLabel(domainNode *domain.Node) (*edge, error) {
 
 	id := sort.Search(len(n.edges), func(i int) bool {
 		if n.tree.domainNodes[n.edges[i].label.start].GetNodeType() == domainNode.GetNodeType() {
+			if n.tree.domainNodes[n.edges[i].label.start].GetToken() == domainNode.GetToken() {
+				return n.tree.domainNodes[n.edges[i].label.start].GetChildCount() >= domainNode.GetChildCount()
+			}
+
 			return n.tree.domainNodes[n.edges[i].label.start].GetToken() >= domainNode.GetToken()
 		}
 
 		return n.tree.domainNodes[n.edges[i].label.start].GetNodeType() >= domainNode.GetNodeType()
 	})
 
-	if id == len(n.edges) || n.tree.domainNodes[n.edges[id].label.start].GetNodeType() != domainNode.GetNodeType() || n.tree.domainNodes[n.edges[id].label.start].GetToken() != domainNode.GetToken() {
+	if id == len(n.edges) ||
+		n.tree.domainNodes[n.edges[id].label.start].GetNodeType() != domainNode.GetNodeType() ||
+		n.tree.domainNodes[n.edges[id].label.start].GetToken() != domainNode.GetToken() ||
+		n.tree.domainNodes[n.edges[id].label.start].GetChildCount() != domainNode.GetChildCount() {
 		return nil, ErrNoEdgeFound
 	}
 
@@ -92,6 +99,10 @@ func (n *node) addEdge(e *edge) error {
 
 	sort.Slice(n.edges, func(i, j int) bool {
 		if n.tree.domainNodes[n.edges[i].label.start].GetNodeType() == n.tree.domainNodes[n.edges[j].label.start].GetNodeType() {
+			if n.tree.domainNodes[n.edges[i].label.start].GetToken() == n.tree.domainNodes[n.edges[j].label.start].GetToken() {
+				return n.tree.domainNodes[n.edges[i].label.start].GetChildCount() < n.tree.domainNodes[n.edges[j].label.start].GetChildCount()
+			}
+
 			return n.tree.domainNodes[n.edges[i].label.start].GetToken() < n.tree.domainNodes[n.edges[j].label.start].GetToken()
 		}
 
