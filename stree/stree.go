@@ -50,26 +50,26 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 		nowNodeLen += int64(len(restDomainNodes))
 		nowNode, e, restDomainNodes, err := st.walk(nowNode, restDomainNodes)
 		if err != nil {
-			return fmt.Errorf("error walking(node): %v", err)
+			return fmt.Errorf("error walking(node): %w", err)
 		}
 		nowNodeLen -= int64(len(restDomainNodes))
 
 		// エッジがみつからなかった場合、Rule2適用
 		if e == nil && len(restDomainNodes) > 0 {
 			if st.nextNode != nil {
-				panic("nextNode is not nil")
+				return errors.New("nextNode is not nil")
 			}
 
 			l, err := newLabel(int64(len(st.domainNodes))-1, finalIndex)
 			if err != nil {
-				return fmt.Errorf("error creating label(no edge): %v", err)
+				return fmt.Errorf("error creating label(no edge): %w", err)
 			}
 
 			leaf := newLeafNode(st, st.leafNum)
 			e := newEdge(st, l, leaf)
 			err = nowNode.addEdge(e)
 			if err != nil {
-				return fmt.Errorf("error adding edge(no edge): %v", err)
+				return fmt.Errorf("error adding edge(no edge): %w", err)
 			}
 
 			st.leafNum++
@@ -97,7 +97,7 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 				suffixLink = nowNode.getSuffixLink()
 				suffixLink, _, linkDomainNodes, err = st.walk(suffixLink, st.domainNodes[e.getLabel().start:splitPoint])
 				if err != nil {
-					return fmt.Errorf("error walking(suffix tree): %v", err)
+					return fmt.Errorf("error walking(suffix tree): %w", err)
 				}
 			} else {
 				if e.getLabel().start+1 == splitPoint {
@@ -105,7 +105,7 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 				} else {
 					suffixLink, _, linkDomainNodes, err = st.walk(st.root, st.domainNodes[e.getLabel().start+1:splitPoint])
 					if err != nil {
-						return fmt.Errorf("error walking(suffix tree): %v", err)
+						return fmt.Errorf("error walking(suffix tree): %w", err)
 					}
 				}
 			}
@@ -123,7 +123,7 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 
 			newNode, _, err := e.splitEdge(splitPoint, suffixLink)
 			if err != nil {
-				return fmt.Errorf("error splitting edge: %v", err)
+				return fmt.Errorf("error splitting edge: %w", err)
 			}
 			newNodeLen := nowNodeLen + e.getLength()
 
@@ -140,14 +140,14 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 
 			l, err := newLabel(int64(len(st.domainNodes))-1, finalIndex)
 			if err != nil {
-				return fmt.Errorf("error creating label(char): %v", err)
+				return fmt.Errorf("error creating label(char): %w", err)
 			}
 
 			leaf := newLeafNode(st, st.leafNum)
 			e := newEdge(st, l, leaf)
 			err = newNode.addEdge(e)
 			if err != nil {
-				return fmt.Errorf("error adding edge(char): %v", err)
+				return fmt.Errorf("error adding edge(char): %w", err)
 			}
 
 			st.leafNum++
@@ -170,7 +170,7 @@ func (st *STree) walk(nd *node, domainNodes []*domain.Node) (*node, *edge, []*do
 		return nd, nil, domainNodes, nil
 	}
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("error getting edge by label: %v", err)
+		return nil, nil, nil, fmt.Errorf("error getting edge by label: %w", err)
 	}
 
 	for e.getLength() < int64(len(domainNodes)) {
@@ -182,7 +182,7 @@ func (st *STree) walk(nd *node, domainNodes []*domain.Node) (*node, *edge, []*do
 			return nd, nil, domainNodes, nil
 		}
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("error getting edge by label: %v", err)
+			return nil, nil, nil, fmt.Errorf("error getting edge by label: %w", err)
 		}
 	}
 
@@ -224,7 +224,7 @@ func (st *STree) GetClonePairs(threshold int) ([]*domain.CloneSequencePair, erro
 		var err error
 		_, cloneMaps, err = st.dfs(nd, threshold, int(e.getLength()), cloneMaps)
 		if err != nil {
-			return nil, fmt.Errorf("error dfs: %v", err)
+			return nil, fmt.Errorf("error dfs: %w", err)
 		}
 	}
 
@@ -256,7 +256,7 @@ func (st *STree) dfs(nd *node, threshold int, length int, cloneMap map[int]map[i
 		if ndType == leafNodeType {
 			ndValue, err := nd.getValue()
 			if err != nil {
-				return nil, nil, fmt.Errorf("error getting value: %v", err)
+				return nil, nil, fmt.Errorf("error getting value: %w", err)
 			}
 
 			directLeafs = append(directLeafs, int(ndValue))
@@ -265,7 +265,7 @@ func (st *STree) dfs(nd *node, threshold int, length int, cloneMap map[int]map[i
 			var err error
 			newLeafs, cloneMap, err = st.dfs(nd, threshold, length+int(e.getLength()), cloneMap)
 			if err != nil {
-				return nil, nil, fmt.Errorf("error dfs: %v", err)
+				return nil, nil, fmt.Errorf("error dfs: %w", err)
 			}
 
 			leafsList = append(leafsList, newLeafs)

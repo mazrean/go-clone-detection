@@ -51,7 +51,7 @@ func (cd *CloneDetector) AddNode(ctx context.Context, root ast.Node) error {
 
 		err := cd.serializer.Serialize(ctx, root, nodeChan)
 		if err != nil {
-			return fmt.Errorf("serialization error: %v", err)
+			return fmt.Errorf("serialization error: %w", err)
 		}
 
 		return nil
@@ -69,7 +69,7 @@ func (cd *CloneDetector) AddNode(ctx context.Context, root ast.Node) error {
 
 				err := cd.suffixTree.AddNode(node)
 				if err != nil {
-					return fmt.Errorf("suffix tree error: %v", err)
+					return fmt.Errorf("suffix tree error: %w", err)
 				}
 			}
 		}
@@ -91,7 +91,7 @@ type ClonePair struct {
 func (cd *CloneDetector) GetClones() ([]*ClonePair, error) {
 	cloneSequencePairs, err := cd.suffixTree.GetClonePairs(cd.config.Threshold)
 	if err != nil {
-		return nil, fmt.Errorf("suffix tree error: %v", err)
+		return nil, fmt.Errorf("suffix tree error: %w", err)
 	}
 
 	clonePairs := []*ClonePair{}
