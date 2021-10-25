@@ -49,6 +49,12 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			sValue.childCounter(sValue.node.GetChildCount() + 1)
 		}
 
+		select {
+		case <-v.ctx.Done():
+			return nil
+		case v.nodeChan <- sValue.node:
+		}
+
 		return nil
 	}
 
@@ -78,12 +84,6 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 				getNodeToken(node),
 			),
 			childCounter: childCounter,
-		}
-
-		select {
-		case <-v.ctx.Done():
-			return nil
-		case v.nodeChan <- sValue.node:
 		}
 
 		v.stack = append(v.stack, &sValue)

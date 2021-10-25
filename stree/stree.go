@@ -87,7 +87,9 @@ func (st *STree) AddNode(newDomainNode *domain.Node) error {
 
 		domainNode := st.domainNodes[e.getLabel().start+int64(len(restDomainNodes))-1]
 
-		if domainNode.GetNodeType() != newDomainNode.GetNodeType() || domainNode.GetToken() != newDomainNode.GetToken() {
+		if domainNode.GetNodeType() != newDomainNode.GetNodeType() ||
+			domainNode.GetToken() != newDomainNode.GetToken() ||
+			domainNode.GetChildCount() != newDomainNode.GetChildCount() {
 			// エッジがみつかり、次の文字が適合しない場合も、Rule2適用
 
 			splitPoint := e.getLabel().start + int64(len(restDomainNodes)) - 1
@@ -190,7 +192,8 @@ func (st *STree) walk(nd *node, domainNodes []*domain.Node) (*node, *edge, []*do
 	restLastNode := domainNodes[len(domainNodes)-1]
 	if e.getLength() == int64(len(domainNodes)) &&
 		edgeLastNode.GetNodeType() == restLastNode.GetNodeType() &&
-		edgeLastNode.GetToken() == restLastNode.GetToken() {
+		edgeLastNode.GetToken() == restLastNode.GetToken() &&
+		edgeLastNode.GetChildCount() == restLastNode.GetChildCount() {
 		return e.getNode(), nil, domainNodes[e.getLength():], nil
 	}
 
