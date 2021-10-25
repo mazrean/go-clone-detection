@@ -19,7 +19,7 @@ func newEdge(tree *STree, label *label, node *node) *edge {
 func (e *edge) splitEdge(i int64, newSuffixLink *node) (*node, *edge, error) {
 	l, err := newLabel(i, e.label.end)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error creating new label(under): %v", err)
+		return nil, nil, fmt.Errorf("error creating new label(under): %w", err)
 	}
 
 	newEdge := newEdge(e.tree, l, e.node)
@@ -27,7 +27,7 @@ func (e *edge) splitEdge(i int64, newSuffixLink *node) (*node, *edge, error) {
 
 	e.label, err = newLabel(e.label.start, i)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error creating new label(upper): %v", err)
+		return nil, nil, fmt.Errorf("error creating new label(upper): %w", err)
 	}
 
 	e.node = newNode
